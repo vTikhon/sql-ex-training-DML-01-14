@@ -1,0 +1,210 @@
+Задание: -1 (Serge I: 2009-06-05)
+Из каждой группы ПК с одинаковым номером модели в таблице PC удалить все строки кроме строки с наибольшим для этой группы кодом (столбец code).
+
+DELETE FROM pc
+WHERE code NOT IN (SELECT MAX(code)
+                   FROM pc
+                   GROUP BY model)
+
+
+Задание: 1 (Serge I: 2004-09-08)
+Добавить в таблицу PC следующую модель:
+code: 20
+model: 2111
+speed: 950
+ram: 512
+hd: 60
+cd: 52x
+price: 1100
+
+INSERT INTO pc VALUES
+(20, '2111', 950, 512, 60, '52x', 1100);
+
+
+Задание: 2 (Serge I: 2004-09-08)
+Добавить в таблицу Product следующие продукты производителя Z:
+принтер модели 4003, ПК модели 4001 и блокнот модели 4002
+
+INSERT INTO product VALUES
+('Z', '4003', 'Printer'),
+('Z', '4001', 'PC'),
+('Z', '4002', 'Laptop');
+
+
+Задание: 3 (Serge I: 2004-09-08)
+Добавить в таблицу PC модель 4444 с кодом 22, имеющую скорость процессора 1200 и цену 1350.
+Отсутствующие характеристики должны быть восполнены значениями по умолчанию, принятыми для соответствующих столбцов.
+
+INSERT INTO pc VALUES
+(22, '4444', 1200, DEFAULT, DEFAULT, DEFAULT, 1350);
+
+
+
+Задание: 4 (Serge I: 2004-09-08)
+Для каждой группы блокнотов с одинаковым номером модели добавить запись в таблицу PC со следующими характеристиками:
+код: минимальный код блокнота в группе +20;
+модель: номер модели блокнота +1000;
+скорость: максимальная скорость блокнота в группе;
+ram: максимальный объем ram блокнота в группе *2;
+hd: максимальный объем hd блокнота в группе *2;
+cd: значение по умолчанию;
+цена: максимальная цена блокнота в группе, уменьшенная в 1,5 раза.
+Замечание. Считать номер модели числом.
+
+INSERT INTO pc (code, model, speed, ram, hd, price)
+SELECT MIN(code) + 20,
+       model + 1000,
+       MAX(speed),
+       MAX(ram) * 2,
+       MAX(hd) * 2,
+       MAX(price) / 1.5
+FROM laptop
+GROUP BY model
+
+
+Задание: 5 (Serge I: 2004-09-08)
+Удалить из таблицы PC компьютеры, имеющие минимальный объем диска или памяти.
+
+DELETE FROM pc
+WHERE hd = (SELECT MIN(hd) FROM pc)
+      OR
+      ram = (SELECT MIN(ram) FROM pc)
+
+
+Задание: 6 (Serge I: 2004-09-08)
+Удалить все блокноты, выпускаемые производителями, которые не выпускают принтеры.
+
+DELETE FROM laptop
+WHERE model NOT IN (SELECT model
+                    FROM product
+                    WHERE maker IN (SELECT maker
+                                    FROM product
+                                    WHERE type = 'Printer'))
+
+
+Задание: 7 (Serge I: 2004-09-08)
+Производство принтеров производитель A передал производителю Z. Выполнить соответствующее изменение.
+
+UPDATE product
+SET maker = 'Z'
+WHERE maker = 'A'
+      AND
+      type = 'Printer'
+
+
+Задание: 8 (Serge I: 2004-09-08)
+Удалите из таблицы Ships все корабли, потопленные в сражениях.
+
+DELETE FROM Ships
+WHERE name IN (SELECT ship
+              FROM Outcomes
+              WHERE result = 'sunk')
+
+
+
+Задание: 9 (Serge I: 2004-09-08)
+Измените данные в таблице Classes так, чтобы калибры орудий измерялись в
+сантиметрах (1 дюйм=2,5см), а водоизмещение в метрических тоннах (1
+метрическая тонна = 1,1 тонны). Водоизмещение вычислить с точностью до
+целых.
+
+UPDATE Classes
+SET bore = bore*2.5,
+    displacement= ROUND(displacement/1.1, 0)
+
+
+
+Задание: 10 (Serge I: 2004-09-09)
+Добавить в таблицу PC те модели ПК из Product, которые отсутствуют в таблице PC.
+
+При этом модели должны иметь следующие характеристики:
+
+1. Код равен номеру модели плюс максимальный код, который был до вставки.
+
+2. Скорость, объем памяти и диска, а также скорость CD должны иметь максимальные характеристики среди всех имеющихся в таблице PC.
+
+3. Цена должна быть средней среди всех ПК, имевшихся в таблице PC до вставки.
+
+INSERT INTO pc (code, model, speed, ram, hd, cd, price)
+SELECT
+  model + (SELECT MAX(code) FROM pc),
+  model,
+  (SELECT MAX(speed) FROM pc),
+  (SELECT MAX(ram) FROM pc),
+  (SELECT MAX(hd) FROM pc),
+  CAST((SELECT MAX(CAST (SUBSTRING(cd,1,LEN(cd) - 1) AS int))
+        FROM pc) AS VARCHAR) + 'x',
+  (SELECT AVG(price) FROM pc)
+FROM product
+WHERE type = 'PC'
+      AND
+      model NOT IN (SELECT model FROM pc)
+
+
+Задание: 11 (Serge I: 2004-09-09)
+Для каждой группы блокнотов с одинаковым номером модели добавить запись в таблицу PC со следующими характеристиками:
+код: минимальный код блокнота в группе +20;
+модель: номер модели блокнота +1000;
+скорость: максимальная скорость блокнота в группе;
+ram: максимальный объем ram блокнота в группе *2;
+hd: максимальный объем hd блокнота в группе *2;
+cd: cd c максимальной скоростью среди всех ПК;
+цена: максимальная цена блокнота в группе, уменьшенная в 1,5 раза
+
+INSERT INTO pc (code, model, speed, ram, hd, cd, price)
+SELECT MIN(code) + 20,
+       model + 1000,
+       MAX(speed),
+       MAX(ram) * 2,
+       MAX(hd) * 2,
+       CAST((SELECT MAX(CAST (SUBSTRING(cd,1,LEN(cd) - 1) AS int))
+             FROM pc) AS VARCHAR) + 'x',
+       MAX(price) / 1.5
+FROM laptop
+GROUP BY model
+
+Задание: 12 (Serge I: 2004-09-09)
+Добавьте один дюйм к размеру экрана каждого блокнота,
+выпущенного производителями E и B, и уменьшите его цену на $100.
+
+UPDATE laptop
+SET screen = screen + 1,
+    price = price - 100
+WHERE model IN (SELECT model
+                FROM product
+                WHERE maker = 'E'
+                      OR
+                      maker = 'B'
+                      AND
+                      type = 'Laptop')
+
+Задание: 13 (Serge I: 2004-09-09)
+Ввести в базу данных информацию о том, что корабль Rodney был потоплен в битве, произошедшей 25/10/1944, а корабль Nelson поврежден - 28/01/1945.
+Замечание: считать, что дата битвы уникальна в таблице Battles.
+
+INSERT INTO Outcomes VALUES
+('Rodney',
+  (SELECT name FROM Battles WHERE date ='1944-10-25'),
+  'sunk'),
+('Nelson', 
+  (SELECT name FROM Battles WHERE date ='1945-01-28'),
+  'damaged')
+
+
+Задание: 14 (Serge I: 2004-09-09)
+Удалите классы, имеющие в базе данных менее трех кораблей (учесть корабли из Outcomes).
+
+DELETE
+FROM classes
+WHERE class in (SELECT C.class
+                FROM classes C
+                LEFT JOIN (SELECT name, class 
+                           FROM ships
+                          UNION
+                           SELECT ship AS name, ship AS class
+                           FROM outcomes) AS U
+                ON C.class = U.class
+                GROUP BY C.class
+                HAVING COUNT(C.class) < 3)
+
+
